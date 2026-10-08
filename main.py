@@ -49,6 +49,7 @@ class FidgetSpinner:
         self.angle = 0.0
         self.speed = 0.0
         self.spin_count = 0
+        self.best_spins = 0
         self.boost_message_until = 0.0
         self.running = True
         self.last_time = time.perf_counter()
@@ -69,7 +70,13 @@ class FidgetSpinner:
     def spin(self):
         self.speed = min(self.speed + SPIN_BOOST, MAX_SPEED)
         self.spin_count += 1
-        self.boost_message_until = time.perf_counter() + BOOST_MESSAGE_DURATION
+
+        if self.spin_count > self.best_spins:
+            self.best_spins = self.spin_count
+
+        self.boost_message_until = (
+            time.perf_counter() + BOOST_MESSAGE_DURATION
+        )
 
     def reset(self):
         self.angle = 0.0
@@ -146,7 +153,9 @@ class FidgetSpinner:
 
         self.info.goto(0, -WINDOW_HEIGHT // 2 + 25)
         self.info.write(
-            f"SPINS: {self.spin_count}    SPEED: {self.speed:.1f}",
+            f"SPINS: {self.spin_count}    "
+            f"BEST: {self.best_spins}    "
+            f"SPEED: {self.speed:.1f}",
             align="center",
             font=("Arial", 16, "bold"),
         )
