@@ -37,6 +37,9 @@ class FidgetSpinner:
         self.info.hideturtle()
         self.info.penup()
         self.info.color("white")
+        self.speed_bar = turtle.Turtle()
+        self.speed_bar.hideturtle()
+        self.speed_bar.speed(0)
 
         self.angle = 0.0
         self.speed = 0.0
@@ -117,18 +120,33 @@ class FidgetSpinner:
     def _draw_interface(self):
         """Draw the spinner and information text."""
         self._draw_spinner()
+        self.speed_bar.clear()
+        self.speed_bar.penup()
+        self.speed_bar.goto(-120, -245)
+        self.speed_bar.pendown()
+        bar_width = 240
+        filled_width = bar_width * (self.speed / MAX_SPEED)
+
+        self.speed_bar.color("#555555")
+        self.speed_bar.width(12)
+        self.speed_bar.forward(bar_width)
+
+        self.speed_bar.penup()
+        self.speed_bar.goto(-120, -245)
+        self.speed_bar.pendown()
+        self.speed_bar.color("#4caf50")
+        self.speed_bar.forward(filled_width)
 
         self.info.clear()
         self.info.goto(
             0,
-            -WINDOW_HEIGHT // 2 + 45,
+            -WINDOW_HEIGHT // 2 + 25,
         )
 
         self.info.write(
-            f"Spins: {self.spin_count}    "
-            f"Speed: {self.speed:.1f}",
+            f"SPINS: {self.spin_count}    SPEED: {self.speed:.1f}",
             align="center",
-            font=("Arial", 14, "normal"),
+            font=("Arial", 16, "bold"),
         )
 
         self.info.goto(
