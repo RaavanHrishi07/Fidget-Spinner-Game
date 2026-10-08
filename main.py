@@ -2,10 +2,8 @@ import math
 import time
 import turtle
 
-
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 600
-SPINNER_RADIUS = 120
 ARM_LENGTH = 100
 ARM_WIDTH = 18
 CENTER_RADIUS = 28
@@ -17,6 +15,7 @@ MIN_SPEED = 0.2
 MAX_SPEED = 18.0
 SPIN_BOOST = 4.0
 FRICTION = 0.97
+BOOST_MESSAGE_DURATION = 0.35
 
 
 class FidgetSpinner:
@@ -37,13 +36,20 @@ class FidgetSpinner:
         self.info.hideturtle()
         self.info.penup()
         self.info.color("white")
+
         self.speed_bar = turtle.Turtle()
         self.speed_bar.hideturtle()
         self.speed_bar.speed(0)
 
+        self.boost_display = turtle.Turtle()
+        self.boost_display.hideturtle()
+        self.boost_display.penup()
+        self.boost_display.color("#ffd54f")
+
         self.angle = 0.0
         self.speed = 0.0
         self.spin_count = 0
+        self.boost_message_until = 0.0
         self.running = True
         self.last_time = time.perf_counter()
 
@@ -51,7 +57,6 @@ class FidgetSpinner:
         self._draw_interface()
 
     def _bind_controls(self):
-        """Set up keyboard and mouse controls."""
         self.screen.listen()
         self.screen.onkey(self.spin, "space")
         self.screen.onkey(self.reset, "r")
@@ -59,45 +64,35 @@ class FidgetSpinner:
         self.screen.onclick(self._mouse_spin)
 
     def _mouse_spin(self, x, y):
-        """Spin the spinner when the user clicks the window."""
         self.spin()
 
     def spin(self):
-        """Add rotational momentum to the spinner."""
-        self.speed = min(
-            self.speed + SPIN_BOOST,
-            MAX_SPEED,
-        )
+        self.speed = min(self.speed + SPIN_BOOST, MAX_SPEED)
         self.spin_count += 1
+        self.boost_message_until = time.perf_counter() + BOOST_MESSAGE_DURATION
 
     def reset(self):
-        """Reset the spinner angle, speed and counter."""
         self.angle = 0.0
         self.speed = 0.0
         self.spin_count = 0
+        self.boost_message_until = 0.0
         self._draw_interface()
 
     def quit(self):
-        """Close the application."""
         self.running = False
         self.screen.bye()
 
     def _draw_spinner(self):
-        """Draw the three-arm spinner."""
         self.spinner.clear()
 
         for index, color in enumerate(ARM_COLORS):
-            arm_angle = math.radians(
-                self.angle + index * 120
-            )
-
+            arm_angle = math.radians(self.angle + index * 120)
             end_x = math.cos(arm_angle) * ARM_LENGTH
             end_y = math.sin(arm_angle) * ARM_LENGTH
 
             self.spinner.penup()
             self.spinner.goto(0, 0)
             self.spinner.pendown()
-
             self.spinner.color(color)
             self.spinner.width(ARM_WIDTH)
             self.spinner.goto(end_x, end_y)
@@ -107,25 +102,18 @@ class FidgetSpinner:
             self.spinner.dot(70, color)
 
         self.spinner.goto(0, 0)
-        self.spinner.dot(
-            CENTER_RADIUS * 2,
-            "#eeeeee",
-        )
+        self.spinner.dot(CENTER_RADIUS * 2, "#eeeeee")
+        self.spinner.dot(CENTER_RADIUS, "#303030")
 
-        self.spinner.dot(
-            CENTER_RADIUS,
-            "#303030",
-        )
-
-    def _draw_interface(self):
-        """Draw the spinner and information text."""
-        self._draw_spinner()
+    def _draw_speed_bar(self):
         self.speed_bar.clear()
+
+        bar_width = 240
+        filled_width = bar_width * (self.speed / MAX_SPEED)
+
         self.speed_bar.penup()
         self.speed_bar.goto(-120, -245)
         self.speed_bar.pendown()
-        bar_width = 240
-        filled_width = bar_width * (self.speed / MAX_SPEED)
 
         self.speed_bar.color("#555555")
         self.speed_bar.width(12)
@@ -134,29 +122,38 @@ class FidgetSpinner:
         self.speed_bar.penup()
         self.speed_bar.goto(-120, -245)
         self.speed_bar.pendown()
+
         self.speed_bar.color("#4caf50")
         self.speed_bar.forward(filled_width)
 
-        self.info.clear()
-        self.info.goto(
-            0,
-            -WINDOW_HEIGHT // 2 + 25,
-        )
+    def _draw_boost_message(self):
+        self.boost_display.clear()
 
+        if time.perf_counter() < self.boost_message_until:
+            self.boost_display.goto(0, -185)
+            self.boost_display.write(
+                "BOOST!",
+                align="center",
+                font=("Arial", 22, "bold"),
+            )
+
+    def _draw_interface(self):
+        self._draw_spinner()
+        self._draw_speed_bar()
+        self._draw_boost_message()
+
+        self.info.clear()
+
+        self.info.goto(0, -WINDOW_HEIGHT // 2 + 25)
         self.info.write(
             f"SPINS: {self.spin_count}    SPEED: {self.speed:.1f}",
             align="center",
             font=("Arial", 16, "bold"),
         )
 
-        self.info.goto(
-            0,
-            WINDOW_HEIGHT // 2 - 50,
-        )
-
+        self.info.goto(0, WINDOW_HEIGHT // 2 - 50)
         self.info.write(
-            "SPACE / Click = Spin    "
-            "R = Reset    ESC = Quit",
+            "SPACE / Click = Spin    R = Reset    ESC = Quit",
             align="center",
             font=("Arial", 12, "normal"),
         )
@@ -164,7 +161,6 @@ class FidgetSpinner:
         self.screen.update()
 
     def update(self):
-        """Update the spinner animation."""
         if not self.running:
             return
 
@@ -179,14 +175,9 @@ class FidgetSpinner:
             self.speed = 0.0
 
         self._draw_interface()
-
-        self.screen.ontimer(
-            self.update,
-            16,
-        )
+        self.screen.ontimer(self.update, 16)
 
     def run(self):
-        """Start the animation loop."""
         self.update()
         self.screen.mainloop()
 
@@ -198,3 +189,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
